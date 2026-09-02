@@ -57,6 +57,15 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction \
     && chown -R www-data:www-data $APP_HOME \
     && chmod -R 775 storage bootstrap/cache
 
+RUN mkdir -p \
+        storage/framework/views \
+        storage/framework/cache/data \
+        storage/framework/sessions \
+        storage/logs \
+        bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
+
 COPY docker/production-entrypoint.sh /usr/local/bin/production-entrypoint.sh
 RUN chmod +x /usr/local/bin/production-entrypoint.sh
 
