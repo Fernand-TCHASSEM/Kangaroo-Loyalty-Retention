@@ -1,13 +1,31 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 
 const showingNavigationDropdown = ref(false);
+
+const page = usePage();
+const successDismissed = ref(false);
+const errorDismissed = ref(false);
+
+watch(
+    () => page.props.flash.success,
+    (value) => {
+        if (value) successDismissed.value = false;
+    },
+);
+
+watch(
+    () => page.props.flash.error,
+    (value) => {
+        if (value) errorDismissed.value = false;
+    },
+);
 </script>
 
 <template>
@@ -86,6 +104,26 @@ const showingNavigationDropdown = ref(false);
                 </div>
             </div>
         </nav>
+
+        <div class="container-fluid px-4 pt-3">
+            <div
+                v-if="page.props.flash.success && !successDismissed"
+                class="alert alert-success alert-dismissible fade show mb-0"
+                role="alert"
+            >
+                {{ page.props.flash.success }}
+                <button type="button" class="btn-close" aria-label="Close" @click="successDismissed = true"></button>
+            </div>
+
+            <div
+                v-if="page.props.flash.error && !errorDismissed"
+                class="alert alert-danger alert-dismissible fade show mb-0"
+                role="alert"
+            >
+                {{ page.props.flash.error }}
+                <button type="button" class="btn-close" aria-label="Close" @click="errorDismissed = true"></button>
+            </div>
+        </div>
 
         <header v-if="$slots.header" class="bg-white shadow-sm">
             <div class="container-fluid px-4 py-3">
