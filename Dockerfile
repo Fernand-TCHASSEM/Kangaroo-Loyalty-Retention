@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1
 
-FROM php:8.4-apache
+##############################################################################
+# base: shared system deps + PHP extensions, used by both dev and production.
+##############################################################################
+FROM php:8.4-apache AS base
 
-# set main params
 ENV APP_HOME=/var/www/html
-ARG HOST_UID=1000
-ARG HOST_GID=1000
 ENV USERNAME=www-data
 ENV TZ='America/Toronto'
 
@@ -40,11 +40,6 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
         intl \
         opcache
 
-# ---- Node.js (for Vite / npm run dev, required with Inertia + Vue) ----
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs \
-    && rm -rf /var/lib/apt/lists/*
-
 # ---- Apache config ----
 RUN a2enmod rewrite headers
 
@@ -61,9 +56,58 @@ RUN printf '<Directory %s>\n\tOptions Indexes FollowSymLinks\n\tAllowOverride Al
 # ---- Composer ----
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
 WORKDIR $APP_HOME
 
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+##############################################################################
+# frontend-build: compile Vite/Vue assets. Only reachable from `production`;
+# its Node toolchain never ends up in the final production image.
+##############################################################################
+FROM node:20-slim AS frontend-build
+
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+##############################################################################
+# production: standalone image, no bind mount. Build with
+#   docker build --target production -t loyalty-retention .
+# Runs as root so the entrypoint can rewrite Apache's port at boot; Apache
+# itself still serves requests as www-data via its own User/Group directives.
+##############################################################################
+FROM base AS production
+
+COPY . .
+COPY --from=frontend-build /app/public/build ./public/build
+
+RUN composer install --no-dev --optimize-autoloader --no-interaction \
+    && chown -R www-data:www-data $APP_HOME \
+    && chmod -R 775 storage bootstrap/cache
+
+COPY docker/production-entrypoint.sh /usr/local/bin/production-entrypoint.sh
+RUN chmod +x /usr/local/bin/production-entrypoint.sh
+
+EXPOSE 8080
+
+ENTRYPOINT ["production-entrypoint.sh"]
+
+##############################################################################
+# dev: local docker-compose target (bind-mounted source, Vite dev server).
+# Left as the last stage so `docker build .` with no --target still produces
+# this image, matching the existing local setup.
+##############################################################################
+FROM base AS dev
+
+ARG HOST_UID=1000
+ARG HOST_GID=1000
+
+# ---- Node.js (for Vite / npm run dev, required with Inertia + Vue) ----
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
 
 # Fix permissions for www-data user and change owner to www-data
 RUN mkdir -p /home/$USERNAME && chown $USERNAME:$USERNAME /home/$USERNAME \
