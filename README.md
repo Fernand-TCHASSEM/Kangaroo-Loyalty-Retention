@@ -66,8 +66,6 @@ Turn customers who are about to churn into customers who come back, by using the
 
 Project folder / repository name: `loyalty-retention`.
 
-See `BUILD_PLAN.md` for setup and build steps, and `TECHNICAL_SPEC.md` for the full specification.
-
 ### Local (PostgreSQL)
 
 ```bash
@@ -93,6 +91,14 @@ DB_PASSWORD=your_password
 ```
 
 Requires the `pdo_pgsql` PHP extension.
+
+Log in with the seeded demo account: `demo@kangaroo.test` / `password`.
+
+### Tests
+
+```bash
+php artisan test
+```
 
 ### Deployment (Render, free tier)
 

@@ -27,7 +27,7 @@ class WinBackService
     {
         $rewards = Reward::orderBy('points_required')->get();
 
-        return Customer::all()
+        return Customer::orderBy('id')->get()
             ->map(fn (Customer $customer) => $this->decorate($customer, $rewards))
             ->values();
     }
