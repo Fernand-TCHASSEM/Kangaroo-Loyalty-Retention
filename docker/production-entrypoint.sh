@@ -9,7 +9,7 @@ sed -ri "s/^Listen .*/Listen ${PORT}/" /etc/apache2/ports.conf
 sed -ri "s/<VirtualHost \*:[0-9]+>/<VirtualHost *:${PORT}>/" /etc/apache2/sites-enabled/000-default.conf
 
 php artisan migrate --force
-
+php artisan migrate --force --seed
 # Safe to (re)build on every boot: these caches are derived purely from the
 # code and the real runtime env vars, which are only available now, not at
 # image build time.
