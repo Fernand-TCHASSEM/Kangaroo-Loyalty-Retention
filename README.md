@@ -1,58 +1,106 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Loyalty Retention: Win-Back Dashboard for Loyalty Programs
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+> A focused tool that helps merchants win back customers who are close to a reward but slipping away.
 
-## About Laravel
+This is a product challenge submission for Kangaroo Rewards. It is intentionally scoped as a credible MVP rather than a complete system.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## The problem
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Loyalty programs generate a specific, valuable, and often-ignored segment: customers who have accumulated points and are **close to unlocking a reward**, but who **stop coming back before they get there**.
 
-## Learning Laravel
+These customers are among the most winnable a merchant has. They are already engaged, they have real points at stake, and they are one or two visits away from a reward. Yet most merchants have no way to see them, so these customers quietly churn while sitting on unredeemed value.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Who experiences the problem
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- **Primary user: the merchant** (or their marketing/operations staff), who wants to retain high-intent customers and increase repeat visits without blasting everyone with generic promotions.
+- **Indirect beneficiary: the customer**, who receives a timely, relevant nudge instead of noise.
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+## The solution
 
-## Agentic Development
+A merchant-facing dashboard that:
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+1. Shows all customers with their points balance and progress toward their next reward.
+2. **Automatically surfaces a "Win-back" segment**: customers who are *close to a reward* (at or above a configurable percentage of the threshold) **and** *inactive* (no purchase for a configurable number of days).
+3. Lets the merchant **trigger a personalized win-back reminder** in one click ("You're only X points away from [reward], come back and claim it!").
+4. Includes a **"Simulate purchase"** action so the merchant (and the demo) can see a customer earn points and move out of the win-back segment in real time.
+
+### Value proposition
+
+Turn customers who are about to churn into customers who come back, by using the *almost-earned reward* as the hook. The segment is small, high-intent, and directly tied to repeat revenue, far more actionable than a generic "inactive customers" list.
+
+---
+
+## Key product decisions
+
+- **The core insight is the combination of two signals**, not either one alone. "Close to a reward" alone includes active customers who need no nudge. "Inactive" alone includes low-value customers not worth chasing. The intersection, *close AND slipping*, is the winnable segment. This is the heart of the product.
+- **Win-back candidates are ranked by proximity to the reward** (fewest points needed first), because those are the easiest and cheapest to convert.
+- **Reminders are personalized and specific** (name, exact points remaining, named reward), because specificity drives action.
+- **Thresholds are configurable** (proximity %, inactivity days) rather than hard-coded, so the tool adapts to different merchant patterns and so the logic is transparent and defensible.
+
+## Key technical decisions
+
+- **Stack: Laravel + Inertia.js + Vue 3 + Bootstrap 5 + PostgreSQL.** This is close to Kangaroo's stack (Laravel, Vue, Inertia); PostgreSQL is used instead of MySQL to enable free deployment on Render, and Eloquent keeps the code database-agnostic and lets the server own the business logic while Vue owns the interactivity.
+- **Inertia instead of a separate REST API.** Controllers return Vue pages with props directly, removing the need to build and maintain a separate JSON API for an MVP. Interactivity stays in Vue.
+- **Business logic lives in a dedicated service** (`WinBackService`), not in controllers. Controllers stay thin: receive, delegate, return. This keeps the segmentation logic isolated, testable, and easy to explain.
+- **Purchases are simulated** via a route, because building a real POS integration (Lightspeed, Shopify, WooCommerce) is out of scope for an MVP and not needed to demonstrate the idea.
+
+## What was intentionally left out
+
+- **Real POS integrations.** In production, transactions would arrive via webhooks from Kangaroo's POS partners. Here they are simulated. This is the single most important "not built on purpose" decision.
+- **Real message delivery.** Reminders are generated and stored, not emailed or texted. Delivery would plug into an email/SMS provider later.
+- **Multi-merchant auth and tenancy.** The MVP assumes a single merchant context. Multi-tenant scoping is noted as the next step.
+- **Reward configuration UI.** Rewards are seeded with a couple of simple tiers rather than managed through a screen.
+
+## What I would improve with more time
+
+- Multi-tenant support so each merchant sees only their own customers.
+- Real POS webhook ingestion and real reminder delivery (email/SMS) with delivery tracking.
+- Reminder effectiveness tracking: did the customer come back after the nudge? This closes the loop and makes the value measurable.
+- A/B testing of reminder copy and configurable reward tiers via the UI.
+
+---
+
+## Running the project
+
+Project folder / repository name: `loyalty-retention`.
+
+See `BUILD_PLAN.md` for setup and build steps, and `TECHNICAL_SPEC.md` for the full specification.
+
+### Local (PostgreSQL)
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install
+npm install
+cp .env.example .env
+php artisan key:generate
+# set the DB connection to pgsql in .env, then:
+php artisan migrate --seed
+npm run dev        # in one terminal
+php artisan serve  # in another
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+`.env` database block:
 
-## Contributing
+```
+DB_CONNECTION=pgsql
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=loyalty_retention
+DB_USERNAME=postgres
+DB_PASSWORD=your_password
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Requires the `pdo_pgsql` PHP extension.
 
-## Code of Conduct
+### Deployment (Render, free tier)
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+1. Push the repo to GitHub.
+2. On Render, create a free **PostgreSQL** instance; copy its Internal Database URL.
+3. Create a **Web Service** from the repo (PHP runtime, or the Docker path from Render's Laravel guide).
+4. Build command runs Composer install, `npm install && npm run build`, and `php artisan migrate --force --seed`.
+5. Set the production env vars (APP_KEY, APP_ENV=production, APP_URL, and the DB_* values from the Render database).
+6. Start command binds Laravel to the port Render assigns.
 
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Note: the free PostgreSQL instance is fine for a demo; Render deletes free databases after 90 days, which does not affect a short evaluation window.
