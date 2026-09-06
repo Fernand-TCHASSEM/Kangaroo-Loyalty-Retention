@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\LoyaltyStatus;
 use App\Models\Customer;
 use App\Models\Reward;
+use App\Models\Transaction;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -75,8 +76,20 @@ class WinBackService
         return [
             'total_customers' => Customer::count(),
             'win_back_count' => $winBack->count(),
-            'points_at_stake' => (int) $winBack->sum('points_needed'),
+            'revenue_at_risk' => $this->revenueAtRisk($winBack),
         ];
+    }
+
+    /**
+     * The total historical spend of the win-back segment: the sum of every
+     * transaction amount for the recoverable customers. This is money we can
+     * lose if they do not come back, not a count of missing points.
+     */
+    private function revenueAtRisk(Collection $winBack): float
+    {
+        return (float) Transaction::query()
+            ->whereIn('customer_id', $winBack->pluck('id'))
+            ->sum('amount');
     }
 
     public function generateReminderMessage(Customer $customer, Reward $reward, int $pointsNeeded): string
