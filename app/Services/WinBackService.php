@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\LoyaltyStatus;
 use App\Models\Customer;
 use App\Models\Reward;
 use Illuminate\Support\Collection;
@@ -15,7 +16,7 @@ class WinBackService
     public function winBackCandidates(): Collection
     {
         return $this->allCustomersWithProgress()
-            ->filter(fn (Customer $customer) => $customer->is_win_back)
+            ->filter(fn (Customer $customer) => $customer->status === LoyaltyStatus::WIN_BACK)
             ->sortBy('points_needed')
             ->values();
     }
@@ -64,15 +65,50 @@ class WinBackService
             ? min(1, max(0, $customer->points_balance / $nextReward->points_required))
             : null;
 
+        $closeToReward = $nextReward !== null
+            && $progressPercent >= config('loyalty.proximity_threshold');
+        $inactive = $daysInactive >= config('loyalty.inactivity_days');
+
         $customer->next_reward = $nextReward;
         $customer->points_needed = $pointsNeeded;
         $customer->progress_percent = $progressPercent;
         $customer->days_inactive = $daysInactive;
-        $customer->is_win_back = $nextReward !== null
-            && $progressPercent >= config('loyalty.proximity_threshold')
-            && $daysInactive >= config('loyalty.inactivity_days');
+        $customer->is_win_back = $closeToReward && $inactive;
+        $customer->status = $this->classify($customer, $nextReward, $closeToReward, $inactive);
 
         return $customer;
+    }
+
+    /**
+     * Resolve a customer's LoyaltyStatus from the two win-back signals.
+     *
+     * WIN_BACK takes precedence over NEVER_ACTIVE so this stays in lockstep
+     * with is_win_back and winBackCandidates(): a customer who never
+     * transacted but is close enough still counts as recoverable.
+     */
+    private function classify(Customer $customer, ?Reward $nextReward, bool $closeToReward, bool $inactive): LoyaltyStatus
+    {
+        if ($nextReward === null) {
+            return LoyaltyStatus::NO_NEXT_REWARD;
+        }
+
+        if ($closeToReward && $inactive) {
+            return LoyaltyStatus::WIN_BACK;
+        }
+
+        if ($customer->last_activity_at === null) {
+            return LoyaltyStatus::NEVER_ACTIVE;
+        }
+
+        if ($closeToReward) {
+            return LoyaltyStatus::ENGAGED_CLOSE;
+        }
+
+        if ($inactive) {
+            return LoyaltyStatus::FADING_FAR;
+        }
+
+        return LoyaltyStatus::HEALTHY;
     }
 
     /**
