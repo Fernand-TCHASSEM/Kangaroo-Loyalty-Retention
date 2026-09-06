@@ -59,4 +59,52 @@ class WinBackServiceTest extends TestCase
 
         $this->assertFalse($candidates->contains('id', $customer->id));
     }
+
+    public function test_a_customer_exactly_at_both_thresholds_is_a_win_back_candidate(): void
+    {
+        $reward = Reward::create(['name' => 'Free coffee', 'points_required' => 100]);
+
+        $customer = Customer::create([
+            'name' => 'Boundary Bea',
+            'email' => 'bea@example.com',
+            'points_balance' => (int) round($reward->points_required * config('loyalty.proximity_threshold')),
+            'last_activity_at' => now()->subDays(config('loyalty.inactivity_days')),
+        ]);
+
+        $candidates = app(WinBackService::class)->winBackCandidates();
+
+        $this->assertTrue($candidates->contains('id', $customer->id));
+    }
+
+    public function test_a_customer_just_below_the_proximity_threshold_is_not_a_win_back_candidate(): void
+    {
+        $reward = Reward::create(['name' => 'Free coffee', 'points_required' => 100]);
+
+        $customer = Customer::create([
+            'name' => 'Almost Amy',
+            'email' => 'amy@example.com',
+            'points_balance' => (int) round($reward->points_required * config('loyalty.proximity_threshold')) - 1,
+            'last_activity_at' => now()->subDays(config('loyalty.inactivity_days') + 10),
+        ]);
+
+        $candidates = app(WinBackService::class)->winBackCandidates();
+
+        $this->assertFalse($candidates->contains('id', $customer->id));
+    }
+
+    public function test_a_customer_just_below_the_inactivity_threshold_is_not_a_win_back_candidate(): void
+    {
+        Reward::create(['name' => 'Free coffee', 'points_required' => 100]);
+
+        $customer = Customer::create([
+            'name' => 'Recent Ravi',
+            'email' => 'ravi@example.com',
+            'points_balance' => 90,
+            'last_activity_at' => now()->subDays(config('loyalty.inactivity_days') - 1),
+        ]);
+
+        $candidates = app(WinBackService::class)->winBackCandidates();
+
+        $this->assertFalse($candidates->contains('id', $customer->id));
+    }
 }
