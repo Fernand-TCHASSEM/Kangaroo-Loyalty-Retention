@@ -1,53 +1,42 @@
-<script setup>
-import { ref, computed } from 'vue';
+<script setup lang="ts">
+import { computed, ref } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import CustomerProgressBar from '@/Components/CustomerProgressBar.vue';
 import StatusBadge from '@/Components/StatusBadge.vue';
 import { dashboardCopy } from '@/copy';
+import { formatCurrency, formatDaysInactive, formatPercent } from '@/formatters';
+import { useWinBackDashboard } from '@/composables/useWinBackDashboard';
 import { Head, router } from '@inertiajs/vue3';
+import type {
+    DashboardConfig,
+    DashboardSummary,
+    Reason,
+    WinBackCustomer,
+} from '@/types/loyalty';
 
-const props = defineProps({
-    summary: {
-        type: Object,
-        required: true,
-    },
-    winBack: {
-        type: Array,
-        required: true,
-    },
-    allCustomers: {
-        type: Array,
-        required: true,
-    },
-    config: {
-        type: Object,
-        required: true,
-    },
-});
+const props = defineProps<{
+    summary: DashboardSummary;
+    winBack: WinBackCustomer[];
+    allCustomers: WinBackCustomer[];
+    config: DashboardConfig;
+}>();
 
 const copy = dashboardCopy;
 
 const proximityPercent = computed(() => Math.round(props.config.proximity_threshold * 100));
 
-// WI-6 will move this into resources/js/formatters/.
-const currencyFormatter = new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency: 'USD',
+const { winBack, isEmpty, count } = useWinBackDashboard(() => props.winBack);
+
+const purchaseAmounts = ref<Record<number, number>>({});
+props.allCustomers.forEach((customer) => {
+    purchaseAmounts.value[customer.id] = 20;
 });
 
-function formatCurrency(value) {
-    return currencyFormatter.format(value ?? 0);
-}
-
-const purchaseAmounts = ref(
-    Object.fromEntries(props.allCustomers.map((customer) => [customer.id, 20])),
-);
-
-function sendReminder(customer) {
+function sendReminder(customer: WinBackCustomer): void {
     router.post(`/customers/${customer.id}/remind`, {}, { preserveScroll: true });
 }
 
-function simulatePurchase(customer) {
+function simulatePurchase(customer: WinBackCustomer): void {
     router.post(
         `/customers/${customer.id}/simulate`,
         { amount: purchaseAmounts.value[customer.id] },
@@ -55,31 +44,25 @@ function simulatePurchase(customer) {
     );
 }
 
-function formatInactivity(customer) {
-    if (customer.status === 'never_active') {
-        return 'Never active';
-    }
-
-    return `${customer.days_inactive} days inactive`;
+function formatInactivity(customer: WinBackCustomer): string {
+    return formatDaysInactive(customer.status === 'never_active' ? null : customer.days_inactive);
 }
 
-function formatProximity(reason) {
-    if (reason.proximity.threshold === null) {
+function formatProximity(reason: Reason): string {
+    if (reason.proximity.threshold === null || reason.proximity.percent === null) {
         return 'Balance meets every reward';
     }
 
-    const percent = Math.round(reason.proximity.percent * 100);
-
-    return `${reason.proximity.balance}/${reason.proximity.threshold} pts (${percent}%)`;
+    return `${reason.proximity.balance}/${reason.proximity.threshold} pts (${formatPercent(reason.proximity.percent)})`;
 }
 
-function formatReason(customer) {
+function formatReason(customer: WinBackCustomer): string {
     const reason = customer.reason;
 
     const proximity =
-        reason.proximity.threshold === null
+        reason.proximity.threshold === null || reason.proximity.percent === null
             ? 'has enough points for every reward'
-            : `is ${Math.round(reason.proximity.percent * 100)}% of the way to the next reward (${reason.proximity.balance} of ${reason.proximity.threshold} points)`;
+            : `is ${formatPercent(reason.proximity.percent)} of the way to the next reward (${reason.proximity.balance} of ${reason.proximity.threshold} points)`;
 
     const inactivity =
         reason.inactivity.days_inactive === null
@@ -131,13 +114,13 @@ function formatReason(customer) {
                 <!-- Zone B: win-back list -->
                 <div class="card mb-4">
                     <div class="card-header">
-                        <h3 class="h5 mb-1">{{ copy.winBack.title(winBack.length) }}</h3>
+                        <h3 class="h5 mb-1">{{ copy.winBack.title(count) }}</h3>
                         <div class="small text-body-secondary">
                             {{ copy.winBack.subtitle(proximityPercent, config.inactivity_days) }}
                         </div>
                     </div>
 
-                    <div v-if="winBack.length === 0" class="card-body text-body-secondary">
+                    <div v-if="isEmpty" class="card-body text-body-secondary">
                         {{ copy.winBack.empty }}
                     </div>
 
