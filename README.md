@@ -2,6 +2,19 @@
 
 > A focused tool that helps merchants win back customers who are close to a reward but slipping away.
 
+## Live demo
+
+**Open the app: https://kangaroo-loyalty-retention.onrender.com**
+
+Sign in with the seeded demo account:
+
+- Email: `demo@kangaroo.test`
+- Password: `password`
+
+> Hosted on Render's free tier, so the first request can take up to a minute while the instance wakes up. Subsequent loads are fast.
+
+![Win-back dashboard showing the two-signal segment](docs/screenshot-dashboard.png)
+
 This is a product challenge submission for Kangaroo Rewards. It is intentionally scoped as a credible MVP rather than a complete system.
 
 ---
