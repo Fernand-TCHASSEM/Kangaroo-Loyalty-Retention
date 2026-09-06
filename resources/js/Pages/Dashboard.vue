@@ -2,6 +2,8 @@
 import { ref, computed } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import CustomerProgressBar from '@/Components/CustomerProgressBar.vue';
+import StatusBadge from '@/Components/StatusBadge.vue';
+import { dashboardCopy } from '@/copy';
 import { Head, router } from '@inertiajs/vue3';
 
 const props = defineProps({
@@ -22,6 +24,8 @@ const props = defineProps({
         required: true,
     },
 });
+
+const copy = dashboardCopy;
 
 const proximityPercent = computed(() => Math.round(props.config.proximity_threshold * 100));
 
@@ -48,6 +52,32 @@ function formatInactivity(customer) {
 
     return `${customer.days_inactive} days inactive`;
 }
+
+function formatProximity(reason) {
+    if (reason.proximity.threshold === null) {
+        return 'Balance meets every reward';
+    }
+
+    const percent = Math.round(reason.proximity.percent * 100);
+
+    return `${reason.proximity.balance}/${reason.proximity.threshold} pts (${percent}%)`;
+}
+
+function formatReason(customer) {
+    const reason = customer.reason;
+
+    const proximity =
+        reason.proximity.threshold === null
+            ? 'has enough points for every reward'
+            : `is ${Math.round(reason.proximity.percent * 100)}% of the way to the next reward (${reason.proximity.balance} of ${reason.proximity.threshold} points)`;
+
+    const inactivity =
+        reason.inactivity.days_inactive === null
+            ? 'has never made a purchase'
+            : `has been inactive for ${reason.inactivity.days_inactive} days, past the ${reason.inactivity.limit} day limit`;
+
+    return `${customer.name} ${proximity}, and ${inactivity}.`;
+}
 </script>
 
 <template>
@@ -63,25 +93,25 @@ function formatInactivity(customer) {
                 <!-- Zone A: summary cards -->
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
-                        <div class="card shadow-sm h-100">
+                        <div class="card h-100">
                             <div class="card-body">
-                                <div class="text-body-secondary small text-uppercase">Total customers</div>
+                                <div class="text-body-secondary small text-uppercase">{{ copy.metrics.totalCustomers }}</div>
                                 <div class="fs-2 fw-semibold">{{ summary.total_customers }}</div>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card shadow-sm h-100 text-white bg-danger">
+                        <div class="card h-100">
                             <div class="card-body">
-                                <div class="small text-uppercase opacity-75">Win-back candidates</div>
+                                <div class="text-body-secondary small text-uppercase">{{ copy.metrics.winBackCount }}</div>
                                 <div class="fs-2 fw-semibold">{{ summary.win_back_count }}</div>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card shadow-sm h-100">
+                        <div class="card h-100">
                             <div class="card-body">
-                                <div class="text-body-secondary small text-uppercase">Points at stake</div>
+                                <div class="text-body-secondary small text-uppercase">{{ copy.metrics.pointsAtStake }}</div>
                                 <div class="fs-2 fw-semibold">{{ summary.points_at_stake }}</div>
                             </div>
                         </div>
@@ -89,56 +119,52 @@ function formatInactivity(customer) {
                 </div>
 
                 <!-- Zone B: win-back list -->
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-white">
-                        <h3 class="h5 mb-1">Customers close to a reward who are slipping away</h3>
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3 class="h5 mb-1">{{ copy.winBack.title(winBack.length) }}</h3>
                         <div class="small text-body-secondary">
-                            At least {{ proximityPercent }}% to a reward, inactive {{ config.inactivity_days }}+ days.
+                            {{ copy.winBack.subtitle(proximityPercent, config.inactivity_days) }}
                         </div>
                     </div>
 
                     <div v-if="winBack.length === 0" class="card-body text-body-secondary">
-                        No customers are slipping away right now.
+                        {{ copy.winBack.empty }}
                     </div>
 
-                    <div v-else class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Progress</th>
-                                    <th>Points needed</th>
-                                    <th>Inactive</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="customer in winBack" :key="customer.id">
-                                    <td>{{ customer.name }}</td>
-                                    <td>
-                                        <CustomerProgressBar
-                                            :progress-percent="customer.progress_percent"
-                                            :current="customer.points_balance"
-                                            :required="customer.next_reward?.points_required ?? null"
-                                        />
-                                    </td>
-                                    <td>{{ customer.points_needed }} points to {{ customer.next_reward.name }}</td>
-                                    <td>{{ formatInactivity(customer) }}</td>
-                                    <td class="text-end">
-                                        <button type="button" class="btn btn-sm btn-primary" @click="sendReminder(customer)">
-                                            Send reminder
-                                        </button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    <ul v-else class="list-group list-group-flush">
+                        <li v-for="customer in winBack" :key="customer.id" class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <span class="fw-semibold">{{ customer.name }}</span>
+                                    <StatusBadge :status="customer.status" class="ms-2" />
+                                </div>
+                                <button type="button" class="btn btn-sm btn-primary" @click="sendReminder(customer)">
+                                    Send reminder
+                                </button>
+                            </div>
+
+                            <CustomerProgressBar
+                                :progress-percent="customer.progress_percent"
+                                :current="customer.points_balance"
+                                :required="customer.next_reward?.points_required ?? null"
+                            />
+
+                            <div class="small mt-2">
+                                <span class="me-3">{{ formatProximity(customer.reason) }}</span>
+                                <span>{{ formatInactivity(customer) }}</span>
+                            </div>
+
+                            <div class="small text-body-secondary mt-1">
+                                {{ formatReason(customer) }}
+                            </div>
+                        </li>
+                    </ul>
                 </div>
 
                 <!-- Zone C: all customers -->
-                <div class="card shadow-sm">
-                    <div class="card-header bg-white">
-                        <h3 class="h5 mb-0">All customers</h3>
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="h5 mb-0">{{ copy.allCustomers.title }}</h3>
                     </div>
 
                     <div class="table-responsive">
@@ -146,6 +172,7 @@ function formatInactivity(customer) {
                             <thead>
                                 <tr>
                                     <th>Name</th>
+                                    <th>Status</th>
                                     <th>Points balance</th>
                                     <th>Next reward</th>
                                     <th>Progress</th>
@@ -156,6 +183,7 @@ function formatInactivity(customer) {
                             <tbody>
                                 <tr v-for="customer in allCustomers" :key="customer.id">
                                     <td>{{ customer.name }}</td>
+                                    <td><StatusBadge :status="customer.status" /></td>
                                     <td>{{ customer.points_balance }}</td>
                                     <td>{{ customer.next_reward ? customer.next_reward.name : 'N/A' }}</td>
                                     <td>
