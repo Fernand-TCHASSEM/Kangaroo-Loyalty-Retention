@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import CustomerProgressBar from '@/Components/CustomerProgressBar.vue';
+import MetricCard from '@/Components/MetricCard.vue';
 import StatusBadge from '@/Components/StatusBadge.vue';
 import { dashboardCopy } from '@/copy';
 import { formatCurrency, formatDaysInactive, formatPercent } from '@/formatters';
@@ -86,28 +87,17 @@ function formatReason(customer: WinBackCustomer): string {
                 <!-- Zone A: summary cards -->
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
-                        <div class="card h-100">
-                            <div class="card-body">
-                                <div class="text-body-secondary small text-uppercase">{{ copy.metrics.totalCustomers }}</div>
-                                <div class="fs-2 fw-semibold">{{ summary.total_customers }}</div>
-                            </div>
-                        </div>
+                        <MetricCard :label="copy.metrics.totalCustomers" :value="summary.total_customers" />
                     </div>
                     <div class="col-md-4">
-                        <div class="card h-100">
-                            <div class="card-body">
-                                <div class="text-body-secondary small text-uppercase">{{ copy.metrics.winBackCount }}</div>
-                                <div class="fs-2 fw-semibold">{{ summary.win_back_count }}</div>
-                            </div>
-                        </div>
+                        <MetricCard :label="copy.metrics.winBackCount" :value="summary.win_back_count" />
                     </div>
                     <div class="col-md-4">
-                        <div class="card h-100">
-                            <div class="card-body">
-                                <div class="text-body-secondary small text-uppercase">{{ copy.metrics.revenueAtRisk }}</div>
-                                <div class="fs-2 fw-semibold">{{ formatCurrency(summary.revenue_at_risk) }}</div>
-                            </div>
-                        </div>
+                        <MetricCard
+                            :label="copy.metrics.revenueAtRisk"
+                            :value="formatCurrency(summary.revenue_at_risk)"
+                            :hint="copy.metrics.revenueAtRiskHint"
+                        />
                     </div>
                 </div>
 
