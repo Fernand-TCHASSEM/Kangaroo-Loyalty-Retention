@@ -19,6 +19,15 @@ This is a product challenge submission for Kangaroo Rewards. It is intentionally
 
 ---
 
+## Documentation
+
+- [docs/DECISIONS.md](docs/DECISIONS.md): the engineering decisions and the reasoning behind them, including why retention over a promo simulator and why the architecture is kept deliberately simple.
+- [docs/DATA_MODEL.md](docs/DATA_MODEL.md): the data schema and the demo dataset, explaining how each customer is designed to demonstrate the two-signal win-back logic.
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): the request lifecycle with Inertia and the flow of the two signals from the SQL query to the dashboard.
+- [docs/TESTING.md](docs/TESTING.md): the testing strategy, the boundary cases, and the test that proves the win-back loop closes.
+
+---
+
 ## The problem
 
 Loyalty programs generate a specific, valuable, and often-ignored segment: customers who have accumulated points and are **close to unlocking a reward**, but who **stop coming back before they get there**.
