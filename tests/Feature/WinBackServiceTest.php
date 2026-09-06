@@ -107,4 +107,35 @@ class WinBackServiceTest extends TestCase
 
         $this->assertFalse($candidates->contains('id', $customer->id));
     }
+
+    public function test_summary_reports_revenue_at_risk_as_win_back_segment_spend(): void
+    {
+        Reward::create(['name' => 'Free coffee', 'points_required' => 100]);
+
+        $candidate = Customer::create([
+            'name' => 'Slipping Away Sam',
+            'email' => 'sam@example.com',
+            'points_balance' => 90,
+            'last_activity_at' => now()->subDays(20),
+        ]);
+        $candidate->transactions()->createMany([
+            ['amount' => 40, 'points_earned' => 40],
+            ['amount' => 50, 'points_earned' => 50],
+        ]);
+
+        // Active customer: close to a reward but not a candidate, so their
+        // spend must not count toward revenue at risk.
+        $active = Customer::create([
+            'name' => 'Regular Rita',
+            'email' => 'rita@example.com',
+            'points_balance' => 90,
+            'last_activity_at' => now()->subDays(2),
+        ]);
+        $active->transactions()->create(['amount' => 999, 'points_earned' => 999]);
+
+        $summary = app(WinBackService::class)->summary();
+
+        $this->assertSame(90.0, $summary['revenue_at_risk']);
+        $this->assertArrayNotHasKey('points_at_stake', $summary);
+    }
 }
