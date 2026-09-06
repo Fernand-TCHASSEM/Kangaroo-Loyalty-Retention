@@ -108,7 +108,6 @@ class WinBackService
         $customer->points_needed = $pointsNeeded;
         $customer->progress_percent = $progressPercent;
         $customer->days_inactive = $daysInactive;
-        $customer->is_win_back = $closeToReward && $inactive;
         $customer->status = $this->classify($customer, $nextReward, $closeToReward, $inactive);
         $customer->reason = $this->buildReason($customer, $nextReward, $progressPercent, $daysInactive);
 
@@ -140,9 +139,9 @@ class WinBackService
     /**
      * Resolve a customer's LoyaltyStatus from the two win-back signals.
      *
-     * WIN_BACK takes precedence over NEVER_ACTIVE so this stays in lockstep
-     * with is_win_back and winBackCandidates(): a customer who never
-     * transacted but is close enough still counts as recoverable.
+     * WIN_BACK takes precedence over NEVER_ACTIVE so winBackCandidates() still
+     * includes a customer who never transacted but is close enough: that
+     * customer stays recoverable.
      */
     private function classify(Customer $customer, ?Reward $nextReward, bool $closeToReward, bool $inactive): LoyaltyStatus
     {
