@@ -1,16 +1,19 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue';
+import type { LoyaltyStatus } from '@/types/loyalty';
 
-const props = defineProps({
-    status: {
-        type: String,
-        required: true,
-    },
-});
+const props = defineProps<{
+    status: LoyaltyStatus;
+}>();
+
+interface Badge {
+    class: string;
+    label: string;
+}
 
 // Each LoyaltyStatus maps to a stock Bootstrap contextual badge class and a
 // plain label. No custom colours.
-const STATUS_BADGES = {
+const STATUS_BADGES: Record<LoyaltyStatus, Badge> = {
     win_back: { class: 'text-bg-danger', label: 'Win-back' },
     engaged_close: { class: 'text-bg-primary', label: 'Engaged' },
     fading_far: { class: 'text-bg-warning', label: 'Fading' },
@@ -19,9 +22,7 @@ const STATUS_BADGES = {
     never_active: { class: 'text-bg-light', label: 'Never active' },
 };
 
-const badge = computed(
-    () => STATUS_BADGES[props.status] ?? { class: 'text-bg-light', label: props.status },
-);
+const badge = computed<Badge>(() => STATUS_BADGES[props.status]);
 </script>
 
 <template>

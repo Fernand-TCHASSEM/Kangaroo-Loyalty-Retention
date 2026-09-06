@@ -13,7 +13,8 @@
         "resources/js/**/*.ts",
         "resources/js/**/*.d.ts",
         "resources/js/Pages/Dashboard.vue",
-        "resources/js/Components/StatusBadge.vue"
+        "resources/js/Components/StatusBadge.vue",
+        "resources/js/Components/CustomerProgressBar.vue"
     ],
     "exclude": ["node_modules", "public"]
 }

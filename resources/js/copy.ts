@@ -7,11 +7,11 @@ export const dashboardCopy = {
         revenueAtRisk: 'Revenue at risk in the win-back segment',
     },
     winBack: {
-        title: (count) =>
+        title: (count: number): string =>
             count === 1
                 ? '1 customer is close to a reward and slipping away'
                 : `${count} customers are close to a reward and slipping away`,
-        subtitle: (proximityPercent, inactivityDays) =>
+        subtitle: (proximityPercent: number, inactivityDays: number): string =>
             `At least ${proximityPercent}% of the way to a reward, and inactive for ${inactivityDays} days or more.`,
         empty: 'No customers are slipping away right now.',
     },

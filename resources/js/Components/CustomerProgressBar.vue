@@ -1,20 +1,11 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue';
 
-const props = defineProps({
-    progressPercent: {
-        type: Number,
-        default: null,
-    },
-    current: {
-        type: Number,
-        required: true,
-    },
-    required: {
-        type: Number,
-        default: null,
-    },
-});
+const props = defineProps<{
+    progressPercent: number | null;
+    current: number;
+    required: number | null;
+}>();
 
 const percent = computed(() => {
     if (props.progressPercent === null) {
