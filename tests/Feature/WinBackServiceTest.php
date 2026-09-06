@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\LoyaltyStatus;
 use App\Models\Customer;
 use App\Models\Reward;
 use App\Services\WinBackService;
@@ -137,5 +138,38 @@ class WinBackServiceTest extends TestCase
 
         $this->assertSame(90.0, $summary['revenue_at_risk']);
         $this->assertArrayNotHasKey('points_at_stake', $summary);
+    }
+
+    public function test_a_customer_past_every_reward_threshold_resolves_to_no_next_reward_status(): void
+    {
+        Reward::create(['name' => 'Free coffee', 'points_required' => 100]);
+        Reward::create(['name' => 'Free lunch', 'points_required' => 300]);
+
+        $customer = Customer::create([
+            'name' => 'Maxed Max',
+            'email' => 'max@example.com',
+            'points_balance' => 320,
+            'last_activity_at' => now()->subDays(40),
+        ]);
+
+        $decorated = app(WinBackService::class)->allCustomersWithProgress()->firstWhere('id', $customer->id);
+
+        $this->assertSame(LoyaltyStatus::NO_NEXT_REWARD, $decorated->status);
+    }
+
+    public function test_a_customer_with_no_transactions_resolves_to_never_active_status(): void
+    {
+        Reward::create(['name' => 'Free coffee', 'points_required' => 100]);
+
+        $customer = Customer::create([
+            'name' => 'Dormant Dana',
+            'email' => 'dana@example.com',
+            'points_balance' => 0,
+            'last_activity_at' => null,
+        ]);
+
+        $decorated = app(WinBackService::class)->allCustomersWithProgress()->firstWhere('id', $customer->id);
+
+        $this->assertSame(LoyaltyStatus::NEVER_ACTIVE, $decorated->status);
     }
 }
