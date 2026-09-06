@@ -75,8 +75,31 @@ class WinBackService
         $customer->days_inactive = $daysInactive;
         $customer->is_win_back = $closeToReward && $inactive;
         $customer->status = $this->classify($customer, $nextReward, $closeToReward, $inactive);
+        $customer->reason = $this->buildReason($customer, $nextReward, $progressPercent, $daysInactive);
 
         return $customer;
+    }
+
+    /**
+     * A small structured explanation of the two signals for this customer,
+     * in plain values, so the reason can be displayed without recomputing
+     * it. Thresholds come from config, not hardcoded. days_inactive is null
+     * for a customer who never transacted; the NEVER_ACTIVE status already
+     * carries that meaning.
+     */
+    private function buildReason(Customer $customer, ?Reward $nextReward, ?float $progressPercent, int $daysInactive): array
+    {
+        return [
+            'proximity' => [
+                'balance' => $customer->points_balance,
+                'threshold' => $nextReward?->points_required,
+                'percent' => $progressPercent,
+            ],
+            'inactivity' => [
+                'days_inactive' => $customer->last_activity_at === null ? null : $daysInactive,
+                'limit' => config('loyalty.inactivity_days'),
+            ],
+        ];
     }
 
     /**
