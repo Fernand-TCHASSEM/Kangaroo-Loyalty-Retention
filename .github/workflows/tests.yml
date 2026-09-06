@@ -32,8 +32,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # 8.3 = composer floor, 8.4 = the version in the production image.
-        php: ['8.3', '8.4']
+        # composer.lock pulls symfony/* 8.1 (needs PHP >= 8.4.1), so 8.3 can't
+        # install it. 8.4 is the version in the production image; add '8.5' here
+        # for forward coverage if wanted.
+        php: ['8.4']
 
     steps:
       - name: Checkout code
