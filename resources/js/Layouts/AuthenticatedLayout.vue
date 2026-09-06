@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { onUnmounted, ref, watch } from 'vue';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
@@ -10,22 +10,43 @@ import { Link, usePage } from '@inertiajs/vue3';
 const showingNavigationDropdown = ref(false);
 
 const page = usePage();
-const successDismissed = ref(false);
-const errorDismissed = ref(false);
+
+// Server flash messages surface as stock Bootstrap toasts. Bootstrap's JS is
+// not bundled, so a Vue timer drives the auto-dismiss and the close button
+// clears the toast, the same hand-rolled approach used elsewhere in this app.
+const TOAST_TIMEOUT = 5000;
+
+const showSuccess = ref(false);
+const showError = ref(false);
+let successTimer = null;
+let errorTimer = null;
 
 watch(
     () => page.props.flash.success,
     (value) => {
-        if (value) successDismissed.value = false;
+        if (!value) return;
+        showSuccess.value = true;
+        clearTimeout(successTimer);
+        successTimer = setTimeout(() => (showSuccess.value = false), TOAST_TIMEOUT);
     },
+    { immediate: true },
 );
 
 watch(
     () => page.props.flash.error,
     (value) => {
-        if (value) errorDismissed.value = false;
+        if (!value) return;
+        showError.value = true;
+        clearTimeout(errorTimer);
+        errorTimer = setTimeout(() => (showError.value = false), TOAST_TIMEOUT);
     },
+    { immediate: true },
 );
+
+onUnmounted(() => {
+    clearTimeout(successTimer);
+    clearTimeout(errorTimer);
+});
 </script>
 
 <template>
@@ -105,23 +126,33 @@ watch(
             </div>
         </nav>
 
-        <div class="container-fluid px-4 pt-3">
+        <div class="toast-container position-fixed top-0 end-0 p-3">
             <div
-                v-if="page.props.flash.success && !successDismissed"
-                class="alert alert-success alert-dismissible fade show mb-0"
-                role="alert"
+                v-if="showSuccess"
+                class="toast show"
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
             >
-                {{ page.props.flash.success }}
-                <button type="button" class="btn-close" aria-label="Close" @click="successDismissed = true"></button>
+                <div class="toast-header">
+                    <strong class="me-auto">Success</strong>
+                    <button type="button" class="btn-close" aria-label="Close" @click="showSuccess = false"></button>
+                </div>
+                <div class="toast-body">{{ page.props.flash.success }}</div>
             </div>
 
             <div
-                v-if="page.props.flash.error && !errorDismissed"
-                class="alert alert-danger alert-dismissible fade show mb-0"
+                v-if="showError"
+                class="toast show"
                 role="alert"
+                aria-live="assertive"
+                aria-atomic="true"
             >
-                {{ page.props.flash.error }}
-                <button type="button" class="btn-close" aria-label="Close" @click="errorDismissed = true"></button>
+                <div class="toast-header">
+                    <strong class="me-auto">Error</strong>
+                    <button type="button" class="btn-close" aria-label="Close" @click="showError = false"></button>
+                </div>
+                <div class="toast-body">{{ page.props.flash.error }}</div>
             </div>
         </div>
 
