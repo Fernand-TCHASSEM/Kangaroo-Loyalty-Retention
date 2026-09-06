@@ -2,6 +2,19 @@
 
 > A focused tool that helps merchants win back customers who are close to a reward but slipping away.
 
+## Live demo
+
+**Open the app: https://kangaroo-loyalty-retention.onrender.com**
+
+Sign in with the seeded demo account:
+
+- Email: `demo@kangaroo.test`
+- Password: `password`
+
+> Hosted on Render's free tier, so the first request can take up to a minute while the instance wakes up. Subsequent loads are fast.
+
+![Win-back dashboard showing the two-signal segment](docs/screenshot-dashboard.png)
+
 This is a product challenge submission for Kangaroo Rewards. It is intentionally scoped as a credible MVP rather than a complete system.
 
 ---
@@ -45,6 +58,7 @@ Turn customers who are about to churn into customers who come back, by using the
 - **Inertia instead of a separate REST API.** Controllers return Vue pages with props directly, removing the need to build and maintain a separate JSON API for an MVP. Interactivity stays in Vue.
 - **Business logic lives in a dedicated service** (`WinBackService`), not in controllers. Controllers stay thin: receive, delegate, return. This keeps the segmentation logic isolated, testable, and easy to explain.
 - **Purchases are simulated** via a route, because building a real POS integration (Lightspeed, Shopify, WooCommerce) is out of scope for an MVP and not needed to demonstrate the idea.
+- **The reasoning behind the two-signal detection, the SQL push-down, the payload contract, and the Bootstrap-defaults frontend is recorded in [`docs/DECISIONS.md`](docs/DECISIONS.md).**
 
 ## What was intentionally left out
 
@@ -97,7 +111,9 @@ Log in with the seeded demo account: `demo@kangaroo.test` / `password`.
 ### Tests
 
 ```bash
-php artisan test
+php artisan test --testsuite=Feature   # backend
+npm test                               # frontend (Vitest)
+npm run typecheck                      # frontend types (vue-tsc)
 ```
 
 ### Deployment (Render, free tier)
