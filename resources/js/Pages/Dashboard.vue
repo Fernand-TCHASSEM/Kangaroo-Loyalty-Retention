@@ -4,16 +4,12 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import CustomerProgressBar from '@/Components/CustomerProgressBar.vue';
 import MetricCard from '@/Components/MetricCard.vue';
 import StatusBadge from '@/Components/StatusBadge.vue';
+import WinBackList from '@/Components/WinBackList.vue';
 import { dashboardCopy } from '@/copy';
-import { formatCurrency, formatDaysInactive, formatPercent } from '@/formatters';
+import { formatCurrency, formatDaysInactive } from '@/formatters';
 import { useWinBackDashboard } from '@/composables/useWinBackDashboard';
 import { Head, router } from '@inertiajs/vue3';
-import type {
-    DashboardConfig,
-    DashboardSummary,
-    Reason,
-    WinBackCustomer,
-} from '@/types/loyalty';
+import type { DashboardConfig, DashboardSummary, WinBackCustomer } from '@/types/loyalty';
 
 const props = defineProps<{
     summary: DashboardSummary;
@@ -26,7 +22,7 @@ const copy = dashboardCopy;
 
 const proximityPercent = computed(() => Math.round(props.config.proximity_threshold * 100));
 
-const { winBack, isEmpty, count } = useWinBackDashboard(() => props.winBack);
+const { winBack, count } = useWinBackDashboard(() => props.winBack);
 
 const purchaseAmounts = ref<Record<number, number>>({});
 props.allCustomers.forEach((customer) => {
@@ -43,34 +39,6 @@ function simulatePurchase(customer: WinBackCustomer): void {
         { amount: purchaseAmounts.value[customer.id] },
         { preserveScroll: true },
     );
-}
-
-function formatInactivity(customer: WinBackCustomer): string {
-    return formatDaysInactive(customer.status === 'never_active' ? null : customer.days_inactive);
-}
-
-function formatProximity(reason: Reason): string {
-    if (reason.proximity.threshold === null || reason.proximity.percent === null) {
-        return 'Balance meets every reward';
-    }
-
-    return `${reason.proximity.balance}/${reason.proximity.threshold} pts (${formatPercent(reason.proximity.percent)})`;
-}
-
-function formatReason(customer: WinBackCustomer): string {
-    const reason = customer.reason;
-
-    const proximity =
-        reason.proximity.threshold === null || reason.proximity.percent === null
-            ? 'has enough points for every reward'
-            : `is ${formatPercent(reason.proximity.percent)} of the way to the next reward (${reason.proximity.balance} of ${reason.proximity.threshold} points)`;
-
-    const inactivity =
-        reason.inactivity.days_inactive === null
-            ? 'has never made a purchase'
-            : `has been inactive for ${reason.inactivity.days_inactive} days, past the ${reason.inactivity.limit} day limit`;
-
-    return `${customer.name} ${proximity}, and ${inactivity}.`;
 }
 </script>
 
@@ -110,38 +78,7 @@ function formatReason(customer: WinBackCustomer): string {
                         </div>
                     </div>
 
-                    <div v-if="isEmpty" class="card-body text-body-secondary">
-                        {{ copy.winBack.empty }}
-                    </div>
-
-                    <ul v-else class="list-group list-group-flush">
-                        <li v-for="customer in winBack" :key="customer.id" class="list-group-item">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <div>
-                                    <span class="fw-semibold">{{ customer.name }}</span>
-                                    <StatusBadge :status="customer.status" class="ms-2" />
-                                </div>
-                                <button type="button" class="btn btn-sm btn-primary" @click="sendReminder(customer)">
-                                    Send reminder
-                                </button>
-                            </div>
-
-                            <CustomerProgressBar
-                                :progress-percent="customer.progress_percent"
-                                :current="customer.points_balance"
-                                :required="customer.next_reward?.points_required ?? null"
-                            />
-
-                            <div class="small mt-2">
-                                <span class="me-3">{{ formatProximity(customer.reason) }}</span>
-                                <span>{{ formatInactivity(customer) }}</span>
-                            </div>
-
-                            <div class="small text-body-secondary mt-1">
-                                {{ formatReason(customer) }}
-                            </div>
-                        </li>
-                    </ul>
+                    <WinBackList :candidates="winBack" @remind="sendReminder" />
                 </div>
 
                 <!-- Zone C: all customers -->
@@ -176,7 +113,7 @@ function formatReason(customer: WinBackCustomer): string {
                                             :required="customer.next_reward?.points_required ?? null"
                                         />
                                     </td>
-                                    <td>{{ formatInactivity(customer) }}</td>
+                                    <td>{{ formatDaysInactive(customer.days_inactive) }}</td>
                                     <td>
                                         <div class="d-flex gap-2" style="max-width: 12rem">
                                             <input
