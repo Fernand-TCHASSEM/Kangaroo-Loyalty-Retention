@@ -5,6 +5,7 @@ export const dashboardCopy = {
         totalCustomers: 'Total customers',
         winBackCount: 'Win-back customers',
         revenueAtRisk: 'Revenue at risk in the win-back segment',
+        revenueAtRiskHint: 'Historical spend of the win-back segment',
     },
     winBack: {
         title: (count: number): string =>

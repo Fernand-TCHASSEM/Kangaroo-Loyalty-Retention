@@ -13,7 +13,9 @@
         "resources/js/**/*.d.ts",
         "resources/js/Pages/Dashboard.vue",
         "resources/js/Components/StatusBadge.vue",
-        "resources/js/Components/CustomerProgressBar.vue"
+        "resources/js/Components/CustomerProgressBar.vue",
+        "resources/js/Components/MetricCard.vue",
+        "resources/js/Components/WinBackList.vue"
     ],
     "exclude": [
         "node_modules",
