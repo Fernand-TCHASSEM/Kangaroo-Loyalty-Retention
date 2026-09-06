@@ -1,11 +1,10 @@
 // Centralized dashboard copy, so wording stays consistent across the page.
-// WI-5 extends this with the value-at-risk labels.
 
 export const dashboardCopy = {
     metrics: {
         totalCustomers: 'Total customers',
         winBackCount: 'Win-back customers',
-        pointsAtStake: 'Points still needed across the win-back segment',
+        revenueAtRisk: 'Revenue at risk in the win-back segment',
     },
     winBack: {
         title: (count) =>

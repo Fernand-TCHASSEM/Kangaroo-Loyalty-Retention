@@ -29,6 +29,16 @@ const copy = dashboardCopy;
 
 const proximityPercent = computed(() => Math.round(props.config.proximity_threshold * 100));
 
+// WI-6 will move this into resources/js/formatters/.
+const currencyFormatter = new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: 'USD',
+});
+
+function formatCurrency(value) {
+    return currencyFormatter.format(value ?? 0);
+}
+
 const purchaseAmounts = ref(
     Object.fromEntries(props.allCustomers.map((customer) => [customer.id, 20])),
 );
@@ -111,8 +121,8 @@ function formatReason(customer) {
                     <div class="col-md-4">
                         <div class="card h-100">
                             <div class="card-body">
-                                <div class="text-body-secondary small text-uppercase">{{ copy.metrics.pointsAtStake }}</div>
-                                <div class="fs-2 fw-semibold">{{ summary.points_at_stake }}</div>
+                                <div class="text-body-secondary small text-uppercase">{{ copy.metrics.revenueAtRisk }}</div>
+                                <div class="fs-2 fw-semibold">{{ formatCurrency(summary.revenue_at_risk) }}</div>
                             </div>
                         </div>
                     </div>
