@@ -4,15 +4,24 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "test": "vitest run",
+        "typecheck": "vue-tsc --noEmit"
     },
     "devDependencies": {
         "@inertiajs/vue3": "^2.0.0",
+        "@types/node": "^26.4.1",
         "@vitejs/plugin-vue": "^6.0.0",
+        "@vue/test-utils": "^2.5.0",
+        "@vue/tsconfig": "^0.9.1",
         "concurrently": "^10.0.3",
+        "jsdom": "^29.1.1",
         "laravel-vite-plugin": "^3.1",
+        "typescript": "^5.9.3",
         "vite": "^8.0.0",
-        "vue": "^3.4.0"
+        "vitest": "^4.1.11",
+        "vue": "^3.4.0",
+        "vue-tsc": "^3.3.11"
     },
     "optionalDependencies": {
         "@laravel/multiplex": "^0.4.1"
