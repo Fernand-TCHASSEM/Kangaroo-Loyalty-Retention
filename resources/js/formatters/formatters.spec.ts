@@ -25,10 +25,8 @@ describe('formatDaysInactive', () => {
 });
 
 describe('formatCurrency', () => {
-    it('formats an amount through Intl currency formatting', () => {
-        expect(formatCurrency(773)).toBe(
-            new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(773),
-        );
+    it('formats an amount as an en-US US dollar string', () => {
+        expect(formatCurrency(773)).toBe('$773.00');
     });
 
     it('treats a null amount as zero', () => {
