@@ -42,7 +42,7 @@ function simulatePurchase(customer) {
 }
 
 function formatInactivity(customer) {
-    if (customer.last_activity_at === null) {
+    if (customer.status === 'never_active') {
         return 'Never active';
     }
 
