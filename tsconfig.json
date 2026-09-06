@@ -1,9 +1,8 @@
 {
     "extends": "@vue/tsconfig/tsconfig.dom.json",
     "compilerOptions": {
-        "baseUrl": ".",
         "paths": {
-            "@/*": ["resources/js/*"],
+            "@/*": ["./resources/js/*"],
             "ziggy-js": ["./vendor/tightenco/ziggy"]
         },
         "allowJs": true,
@@ -16,5 +15,10 @@
         "resources/js/Components/StatusBadge.vue",
         "resources/js/Components/CustomerProgressBar.vue"
     ],
-    "exclude": ["node_modules", "public"]
+    "exclude": [
+        "node_modules",
+        "public",
+        "resources/js/**/*.spec.ts",
+        "resources/js/**/*.test.ts"
+    ]
 }
