@@ -1,7 +1,7 @@
 # Architecture
 
 The mental model for how a request moves through this codebase. For why the
-pieces are shaped this way (Inertia over a REST API, one service, the SQL
+pieces are shaped this way (Inertia over a REST API, the service layer, the SQL
 push-down, the payload contract), see `docs/DECISIONS.md` and the README. For
 the tables and the demo dataset, see `docs/DATA_MODEL.md`. This file is how
 they connect.
@@ -39,16 +39,21 @@ Two routes, both under `auth` only, both unnamed, both called by literal URL
 from `Dashboard.vue` with `router.post(url, payload, { preserveScroll: true })`:
 
 - `POST /customers/{customer}/simulate` to `TransactionController@store`.
-  Validates with `SimulatePurchaseRequest`, computes
-  `points = floor(amount * points_per_dollar)`, then one `DB::transaction`
+  Validates with `SimulatePurchaseRequest`, then delegates to
+  `PurchaseService::recordPurchase()`, which computes
+  `points = floor(amount * points_per_dollar)` and, in one `DB::transaction`,
   creates the `transactions` row, increments `points_balance`, and sets
-  `last_activity_at` to now.
+  `last_activity_at` to now. The controller only reads the returned
+  `Transaction` back for the flash message.
 - `POST /customers/{customer}/remind` to `ReminderController@store`.
-  Re-derives the candidate with
-  `$service->winBackCandidates()->firstWhere('id', $customer->id)`. If it is
-  no longer a win-back row it returns `back()->with('error', ...)` without
-  writing. Otherwise it writes a `reminders` row with the candidate's
-  `next_reward->id` and `$service->generateReminderMessage(...)`.
+  Delegates to `ReminderService::sendReminder()`, which re-derives the
+  candidate with
+  `$winBackService->winBackCandidates()->firstWhere('id', $customer->id)`.
+  If it is no longer a win-back row the service returns `null` and the
+  controller responds `back()->with('error', ...)` without writing.
+  Otherwise the service writes a `reminders` row with the candidate's
+  `next_reward->id` and `$winBackService->generateReminderMessage(...)`, and
+  the controller responds `back()->with('success', ...)`.
 
 Both handlers end with `back()->with('success'|'error', ...)`. Inertia
 follows the redirect back to `/dashboard`, `index` runs again, the two
@@ -57,18 +62,28 @@ There is no client cache to invalidate and no partial update to reconcile.
 
 ### Where the logic lives
 
-`WinBackService` owns every rule: the coarse query, all thresholds (read
-from `config('loyalty.*')`, never inline), the decoration of derived fields,
-the `LoyaltyStatus` classification, the revenue-at-risk sum, and the reminder
-copy.
+Three services split the domain rules by the write they own:
 
-The controllers receive, delegate, and return. `DashboardController` has no
-branching. `TransactionController` does arithmetic and persistence only.
-`ReminderController`'s single rule, the stale-candidate check, is delegated
-to the service. On the frontend, `useWinBackDashboard` only sorts the list by
-`points_needed` and exposes a count and an empty flag; the `formatters` and
-`copy` modules are pure presentation. No business rule lives outside the
-service.
+- **`WinBackService`** owns detection: the coarse query, all thresholds (read
+  from `config('loyalty.*')`, never inline), the decoration of derived
+  fields, the `LoyaltyStatus` classification, the revenue-at-risk sum, and
+  the reminder copy text.
+- **`PurchaseService`** owns the earning rule: `points = floor(amount *
+  points_per_dollar)` and the transactional write (transaction row, balance
+  increment, `last_activity_at` bump).
+- **`ReminderService`** owns the write side of the win-back loop: it
+  re-resolves the candidate through `WinBackService` and either persists a
+  `reminders` row or reports the customer is stale. It depends on
+  `WinBackService` rather than duplicating the candidate check.
+
+Every controller receives, delegates, and returns; no controller branches on
+a domain rule. `DashboardController` has no branching at all.
+`TransactionController` unwraps the request and reports the result.
+`ReminderController`'s only decision, `$reminder === null`, chooses between
+the two flash messages the service outcome implies. On the frontend,
+`useWinBackDashboard` only sorts the list by `points_needed` and exposes a
+count and an empty flag; the `formatters` and `copy` modules are pure
+presentation. No business rule lives outside a service.
 
 ## 2. The two-signal flow
 
@@ -133,6 +148,6 @@ flowchart TD
     RES --> RENDER["Inertia::render('Dashboard')<br/>props: summary, winBack, allCustomers, config"]
     SUM --> RENDER
     RENDER --> VUE["Dashboard.vue: Zone B win-back list, Zone C all-customers table"]
-    VUE -->|"router.post simulate or remind (preserveScroll)"| WRITE["Transaction / ReminderController: persist then back() with flash"]
+    VUE -->|"router.post simulate or remind (preserveScroll)"| WRITE["Transaction / ReminderController delegate to PurchaseService / ReminderService, then back() with flash"]
     WRITE --> REQ
 ```
