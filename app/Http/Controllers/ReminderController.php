@@ -3,29 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
-use App\Services\WinBackService;
+use App\Services\ReminderService;
 use Illuminate\Http\RedirectResponse;
 
 class ReminderController extends Controller
 {
-    public function store(Customer $customer, WinBackService $service): RedirectResponse
+    public function store(Customer $customer, ReminderService $service): RedirectResponse
     {
-        $winBackCustomer = $service->winBackCandidates()->firstWhere('id', $customer->id);
+        $reminder = $service->sendReminder($customer);
 
-        if ($winBackCustomer === null) {
+        if ($reminder === null) {
             return back()->with('error', 'This customer is no longer a win-back candidate.');
         }
-
-        $message = $service->generateReminderMessage(
-            $winBackCustomer,
-            $winBackCustomer->next_reward,
-            $winBackCustomer->points_needed,
-        );
-
-        $customer->reminders()->create([
-            'reward_id' => $winBackCustomer->next_reward->id,
-            'message' => $message,
-        ]);
 
         return back()->with('success', "Reminder sent to {$customer->name}.");
     }

@@ -65,7 +65,7 @@ Turn customers who are about to churn into customers who come back, by using the
 
 - **Stack: Laravel + Inertia.js + Vue 3 + Bootstrap 5 + PostgreSQL.** This is close to Kangaroo's stack (Laravel, Vue, Inertia); PostgreSQL is used instead of MySQL to enable free deployment on Render, and Eloquent keeps the code database-agnostic and lets the server own the business logic while Vue owns the interactivity.
 - **Inertia instead of a separate REST API.** Controllers return Vue pages with props directly, removing the need to build and maintain a separate JSON API for an MVP. Interactivity stays in Vue.
-- **Business logic lives in a dedicated service** (`WinBackService`), not in controllers. Controllers stay thin: receive, delegate, return. This keeps the segmentation logic isolated, testable, and easy to explain.
+- **Business logic lives in dedicated services** (`WinBackService` for detection, `PurchaseService` for the earning rule, `ReminderService` for the win-back reminder write), not in controllers. Controllers stay thin: receive, delegate, return. This keeps each rule isolated, testable, and easy to explain.
 - **Purchases are simulated** via a route, because building a real POS integration (Lightspeed, Shopify, WooCommerce) is out of scope for an MVP and not needed to demonstrate the idea.
 - **The reasoning behind the two-signal detection, the SQL push-down, the payload contract, and the Bootstrap-defaults frontend is recorded in [`docs/DECISIONS.md`](docs/DECISIONS.md).**
 
