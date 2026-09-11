@@ -17,7 +17,7 @@ Both thresholds live in config/loyalty.php. Never hardcode them. The rule is imp
 
 ## Where things live
 
-- Business logic: app/Services/WinBackService.php (keep it here, not in controllers).
+- Business logic: app/Services/ (WinBackService for detection, PurchaseService for the earning rule, ReminderService for the reminder write; keep it here, not in controllers).
 - Dashboard page: resources/js/Pages/Dashboard.vue.
 - Dashboard components: resources/js/Components/ (MetricCard, StatusBadge, WinBackList, CustomerProgressBar).
 - Formatters and view state: resources/js/formatters/, resources/js/composables/useWinBackDashboard.ts.

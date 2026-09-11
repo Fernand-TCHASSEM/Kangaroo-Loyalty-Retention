@@ -35,10 +35,15 @@ that only make sense for a stateless calculator.
 
 ## A deliberately simple architecture
 
-There is one `WinBackService`. There are no layered domain folders, no
-strategy hierarchy, no factory, and no repository interfaces. A single
-detection rule does not need them, and the indirection would make the rule
-harder to read, not easier.
+Domain rules live in services, one per write they own: `WinBackService`
+(detection), `PurchaseService` (the earning rule), `ReminderService` (the
+win-back reminder write, which depends on `WinBackService` to re-check the
+candidate rather than duplicating that check). There are no layered domain
+folders, no strategy hierarchy, no factory, and no repository interfaces.
+Three narrow services do not need them, and the indirection would make each
+rule harder to read, not easier. A controller with no domain logic of its
+own, like `ProfileController`, gets no service; wrapping Eloquent calls in a
+service that adds no rule would be indirection with nothing behind it.
 
 Within that constraint we still made the logic explicit rather than implicit:
 
